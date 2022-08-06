@@ -264,4 +264,53 @@ public class QueryDslBasicTest {
         assertThat(teamB.get(team.name)).isEqualTo("teamB");
         assertThat(teamB.get(member.age.avg())).isEqualTo((30+40)/2);
     }
+
+    /**
+     * 팀 A에 소속됨 모든 회원
+     */
+    @Test
+    public void join() {
+        List<Member> result = query.selectFrom(member)
+//                .join(member.team, team)
+//                .innerJoin(member.team, team) // join == innerJoin
+                .leftJoin(member.team, team)
+                .where(team.name.eq("teamA"))
+                .fetch();
+
+//        assertThat(result.get(0).getUsername()).isEqualTo("member1");
+//        assertThat(result.get(1).getUsername()).isEqualTo("member2");
+
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("member1", "member2");
+    }
+
+    /**
+     * 세타 조인 (카티션곱)
+     * 회원의 이름이 팀 이름과 같은 회원 조인
+     *
+     * <pre>
+     * select
+     *   member0_.member_id as member_i1_1_,
+     *   member0_.age as age2_1_,
+     *   member0_.team_id as team_id4_1_,
+     *   member0_.username as username3_1_
+     * from
+     *   member member0_ cross join team team1_
+     * where
+     *   member0_.username = team1_.name;
+     * </pre>
+     */
+    @Test
+    public void thetaJoin() {
+        em.persist(Member.of("teamA"));
+        em.persist(Member.of("teamB"));
+
+        List<Member> result = query
+                .select(member)
+                .from(member, team)
+                .where(member.username.eq(team.name))
+                .fetch();
+        result.forEach(System.out::println);
+    }
 }
