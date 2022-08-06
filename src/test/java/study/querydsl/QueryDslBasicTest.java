@@ -12,6 +12,8 @@ import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static study.querydsl.entity.QMember.member;
 
@@ -105,5 +107,19 @@ public class QueryDslBasicTest {
                 .fetchOne();
 
         assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    void resultFetch() {
+//        List<Member> fetch = query.selectFrom(member).fetch();
+//        Member fetchOne = query.selectFrom(member).fetchOne();
+//        Member fetchFirst = query.selectFrom(member).fetchFirst();
+
+        // 강의 시점과 달리 220806 기준에서는 페이징 관련 기능은 deprecated
+        // 자동생성되는 count 쿼리의 한계 때문이라고 함
+        // javadoc 을 읽어보면 Blaze-Persistence 라는 querydsl 확장을 쓰라고 되어있음
+        // 추가로 강사님도 자동생성 count 쿼리는 한계가 있어 복잡한 쿼리에서는 별도로 쿼리할 것을 권장했음.
+        query.selectFrom(member).fetchResults();
+        query.selectFrom(member).fetchCount();
     }
 }
