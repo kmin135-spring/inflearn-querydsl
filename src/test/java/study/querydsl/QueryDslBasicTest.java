@@ -1,10 +1,14 @@
 package study.querydsl;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
@@ -147,5 +151,53 @@ public class QueryDslBasicTest {
         assertThat(mem5.getUsername()).isEqualTo("member5");
         assertThat(mem6.getUsername()).isEqualTo("member6");
         assertThat(memNull.getUsername()).isNull();
+    }
+
+    @Test
+    void paging1() {
+        List<Member> fetch = query.selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetch();
+
+        assertThat(fetch.size()).isEqualTo(2);
+    }
+
+    /** deprecated 되었지만 강의대로 해봄 */
+    @Test
+    void paging2() {
+        QueryResults<Member> queryResults = query.selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetchResults();
+
+        assertThat(queryResults.getTotal()).isEqualTo(4);
+        assertThat(queryResults.getLimit()).isEqualTo(2);
+        assertThat(queryResults.getOffset()).isEqualTo(1);
+        assertThat(queryResults.getResults().size()).isEqualTo(2);
+    }
+
+    /**
+     * fetch와 count를 직접 수행
+     * spring-data의 Page 로 생성하여 동일 구조로 테스트
+     * */
+    @Test
+    void paging3() {
+        List<Member> content = query.selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetch();
+
+        Long count = query.select(member.count()).from(member).fetchOne();
+
+        Page<Member> page = new PageImpl<>(content, PageRequest.of(1, 2), count);
+
+        assertThat(page.getTotalElements()).isEqualTo(4);
+        assertThat(page.getPageable().getPageSize()).isEqualTo(2);
+        assertThat(page.getPageable().getPageNumber()).isEqualTo(1);
+        assertThat(page.getContent().size()).isEqualTo(2);
     }
 }
