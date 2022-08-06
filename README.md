@@ -12,3 +12,4 @@
 ---
 
 * JPQL과 QueryDSL의 가장 큰 차이점은 QueryDSL은 Q Type을 활용해서 컴파일 타임에 문법 오류를 잡을 수 있다는 점
+* QueryDSL은 JPQL Builder다

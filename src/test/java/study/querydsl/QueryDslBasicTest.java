@@ -79,4 +79,31 @@ public class QueryDslBasicTest {
 
         assertThat(findMember.getUsername()).isEqualTo("member1");
     }
+
+    @Test
+    public void search() {
+        Member findMember = query.selectFrom(member)
+                .where(member.username.eq("member1")
+                        .and(member.age.eq(10)))
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void searchAndParam() {
+        /*
+        and 조건만 있는 경우 where 의 파라미터로 처리할 수 있다.
+        이 방식의 장점은 파라미터가 null인 경우 생략되기 때문에
+        동적 쿼리 작성에 유리하다.
+         */
+        Member findMember = query.selectFrom(member)
+                .where(
+                    member.username.eq("member1"),
+                    member.age.eq(10)
+                )
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
 }
