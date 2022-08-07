@@ -2,6 +2,8 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -14,6 +16,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
 import study.querydsl.entity.QTeam;
@@ -570,5 +574,94 @@ public class QueryDslBasicTest {
             int age = tuple.get(member.age);
             System.out.println(username + " / " + age);
         }
+    }
+
+    /**
+     * JPQL의 DTO 조회는 패키지명까지 풀어써야하는 제약이 있음
+     */
+    @Test
+    void findDtoByJPQL() {
+        List<MemberDto> resultList = em.createQuery(
+                "select new study.querydsl.dto.MemberDto(m.username, m.age) from Member m",
+                MemberDto.class).getResultList();
+
+        resultList.forEach(System.out::println);
+    }
+
+    @Test
+    public void findDtoBySetter() {
+        // action
+        List<MemberDto> result = query.select(Projections.bean(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println);
+    }
+
+    @Test
+    public void findDtoByField() {
+        // action
+        List<MemberDto> result = query.select(Projections.fields(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println);
+    }
+
+    @Test
+    public void findDtoByConstructor() {
+        // action
+        List<MemberDto> result = query.select(Projections.constructor(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println);
+    }
+
+    /**
+     * field, setter 방식은
+     * DTO와 필드명이 맞지 않으면 기본적으로 null로 들어감
+     * as() 로 필드명을 맞춰주면 됨
+     * subquery 등 복잡한건 ExpressionUtils.as() 사용
+     */
+    @Test
+    public void findUserDtoByField() {
+        QMember memberSub = new QMember("memberSub");
+        // action
+        List<UserDto> result = query.select(Projections.fields(UserDto.class,
+                        member.username.as("name"),
+                        ExpressionUtils.as(JPAExpressions
+                                .select(memberSub.age.max())
+                                .from(memberSub)
+                        , "age")))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println);
+    }
+
+    /**
+     * 반면에 생성자 매핑은 타입을 보고 들어가므로
+     * 타입과 순서만 맞으면 호환됨
+     */
+    @Test
+    public void findUserDtoByConstructor() {
+        QMember memberSub = new QMember("memberSub");
+        // action
+        List<UserDto> result = query.select(Projections.constructor(UserDto.class,
+                        member.username,
+                        JPAExpressions
+                                .select(memberSub.age.max())
+                                .from(memberSub)))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println);
     }
 }
