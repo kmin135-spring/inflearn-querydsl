@@ -3,6 +3,7 @@ package study.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -515,6 +516,40 @@ public class QueryDslBasicTest {
                 .from(member).fetch();
         // assert
 
+        fetch.forEach(System.out::println);
+    }
+
+    /**
+     * 실제 쿼리에는 상수 내용이 들어가지 않고
+     * 결과에만 A가 붙는다. (QueryDSL이 붙여주는 걸로 보면될듯)
+     */
+    @Test
+    public void constant() {
+        // action
+        List<Tuple> result = query
+                .select(member.username, Expressions.constant("A"))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println);
+    }
+
+    @Test
+    public void concat() {
+        /*
+        stringValue 로 캐스팅
+        dbms 에 따라서는 concat하면 자동캐스팅 되기도 하는 부분인데
+        queryDSL에서는 컴파일 에러남
+        stringValue 는 ENUM 처리에서도 사용된다고함
+
+        select ((member0_.username || '_') || cast(member0_.age as character varying)) as col_0_0_
+        -- ...
+         */
+        // action
+        List<String> fetch = query.select(member.username.concat("_").concat(member.age.stringValue()))
+                .from(member)
+                .where(member.age.eq(10))
+                .fetch();
         fetch.forEach(System.out::println);
     }
 }
