@@ -552,4 +552,23 @@ public class QueryDslBasicTest {
                 .fetch();
         fetch.forEach(System.out::println);
     }
+
+    /**
+     * 강사님 권장
+     * Tuple은 querydsl 종속적인 low level 데이터 구조이므로
+     * repository 레벨까지만 사용하고
+     * 상위레벨로는 DTO 등으로 변환해서 넘기자
+     */
+    @Test
+    public void tupleProjection() {
+        // action
+        List<Tuple> result = query.select(member.username, member.age)
+                .from(member)
+                .fetch();
+        for (Tuple tuple : result) {
+            String username = tuple.get(member.username);
+            int age = tuple.get(member.age);
+            System.out.println(username + " / " + age);
+        }
+    }
 }
