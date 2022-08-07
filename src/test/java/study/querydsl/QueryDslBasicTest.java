@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
@@ -662,6 +663,29 @@ public class QueryDslBasicTest {
                 .from(member)
                 .fetch();
 
+        result.forEach(System.out::println);
+    }
+
+    /**
+     * @QueryProjection 을 사용
+     * Projections 은 매핑을 잘못해줘도 런타임에러가나지만
+     * 이 방식은 컴파일 타임에 매핑에러를 파악할 수 있음
+     *
+     * 단점
+     * - DTO도 Q File을 생성해야함
+     * - 여러 레이어에 걸쳐 사용되는 DTO 가 queryDSL 라는 레포지토리 영역 기술에 종속성이 생김
+     *
+     * 결론
+     * - 애플리케이션 구조관점에서 DTO가 queryDSL 에 대한 종속을 가져도 될지 팀 표준을 결정하고
+     *   그에 따라 @QueryProjection 사용여부를 결정하자
+     */
+    @Test
+    public void findDtoByQueryProjection() {
+        // action
+        List<MemberDto> result = query
+                .select(new QMemberDto(member.username, member.age))
+                .from(member)
+                .fetch();
         result.forEach(System.out::println);
     }
 }
