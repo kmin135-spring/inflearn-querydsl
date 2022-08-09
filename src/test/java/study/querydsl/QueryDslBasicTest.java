@@ -802,4 +802,31 @@ public class QueryDslBasicTest {
                 .where(member.age.gt(18))
                 .execute();
     }
+
+    @Test
+    void sqlFunction() {
+        query.select(Expressions
+                    .stringTemplate("function('replace', {0}, {1}, {2})",
+                            member.username, "member", "M"))
+                .from(member)
+                .fetch();
+
+    }
+
+    /**
+     * lower, upper 같은 표준 함수들은 메서드로 제공해주기도한다.
+     */
+    @Test
+    void sqlFunction2() {
+        // 둘 다 동일한 결과를 얻음
+        // ... where member0_.username=lower(member0_.username);
+        List<String> result = query.select(member.username)
+                .from(member)
+//                .where(member.username.eq(
+//                        Expressions.stringTemplate("function('lower', {0})", member.username)))
+                .where(member.username.eq(member.username.lower()))
+                .fetch();
+
+        result.forEach(System.out::println);
+    }
 }
