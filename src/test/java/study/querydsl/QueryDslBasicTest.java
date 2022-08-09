@@ -722,6 +722,10 @@ public class QueryDslBasicTest {
     }
 
 
+    /**
+     * 추가 메서드 생성이 많지만
+     * 가독성과 재활용면에서 유리함
+     */
     @Test
     void dynamicQueryWhereParam() {
         String usernameParam = "member1";
@@ -734,7 +738,7 @@ public class QueryDslBasicTest {
     private List<Member> searchMember2(String usernameCond, Integer ageCond) {
         return query.selectFrom(member)
                 // where에 여러개를 넣으면 and 로 묶인다
-                // null이면 무시된다. (동적 쿼리를 만들 때 유용하다)
+                // null 은 무시된다. (동적 쿼리를 만들 때 유용하다)
 //                .where(usernameEq(usernameCond), ageEq(ageCond))
                 .where(allEq(usernameCond, ageCond))
                 .fetch();
@@ -750,7 +754,7 @@ public class QueryDslBasicTest {
 
     /**
     * 이처럼 조건을 조합할 수도 있다.
-    * 다만 여기서는 생략했지만 NPE 처리를 잘 해줘야함
+    * 다만 여기서는 생략했지만 null 처리를 잘 해줘야함 (NPE 주의)
      */
     private BooleanExpression allEq(String usernameCond, Integer ageCond) {
         return usernameEq(usernameCond).and(ageEq(ageCond));
@@ -762,7 +766,7 @@ public class QueryDslBasicTest {
 
     @Test
     void bulkUpdate() {
-        // 벌크연산은 영속성 컨텍스트 무시하고 바로 DB에 요청한다.
+        // 벌크연산은 영속성 컨텍스트 무시하고 바로 DB에 요청한다. (변경감지와는 다름에 주의)
         long affected = query.update(member)
                 .set(member.username, "비회원")
                 .where(member.age.lt(28))
@@ -770,7 +774,7 @@ public class QueryDslBasicTest {
 
         assertThat(affected).isEqualTo(2);
 
-        // 영속성 컨텍스트값을 우선하므로 벌크연산결과가 반영되어있지 않음
+        // 영속성 컨텍스트값을 우선하므로 벌크연산결과가 반영되어있지 않음 (1차 캐시를 통한 REPEATABLE READ 같은 효과)
         List<Member> fetch = query.selectFrom(member).fetch();
         fetch.forEach(System.out::println);
 
@@ -803,6 +807,10 @@ public class QueryDslBasicTest {
                 .execute();
     }
 
+    /**
+     * db 함수 호출방법 기본 dialect에 포함되지 않는 함수들은
+     * JPQL 때와 마찬가지로 커스텀 dialect 생성 후 선언해서 사용해야함
+     */
     @Test
     void sqlFunction() {
         query.select(Expressions
