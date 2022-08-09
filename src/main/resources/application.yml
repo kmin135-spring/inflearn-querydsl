@@ -11,4 +11,5 @@ spring:
       hibernate:
         # 이걸 켜주면 QueryDSL 가 생성한 JPQL 이 보임
         # p6spy나 logging 레벨 조정으로 sql까지 보이게해두면 JPQL, SQL을 모두 볼 수 있음
-        use_sql_comments: true
+        # 220809 근데 버그인지 키니까 SQL 파라미터가 불완전하게 나옴
+#        use_sql_comments: true

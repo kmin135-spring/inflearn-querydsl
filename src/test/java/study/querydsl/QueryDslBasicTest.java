@@ -4,7 +4,9 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -120,8 +122,8 @@ public class QueryDslBasicTest {
          */
         Member findMember = query.selectFrom(member)
                 .where(
-                    member.username.eq("member1"),
-                    member.age.eq(10)
+                        member.username.eq("member1"),
+                        member.age.eq(10)
                 )
                 .fetchOne();
 
@@ -179,7 +181,9 @@ public class QueryDslBasicTest {
         assertThat(fetch.size()).isEqualTo(2);
     }
 
-    /** deprecated 되었지만 강의대로 해봄 */
+    /**
+     * deprecated 되었지만 강의대로 해봄
+     */
     @Test
     void paging2() {
         QueryResults<Member> queryResults = query.selectFrom(member)
@@ -197,7 +201,7 @@ public class QueryDslBasicTest {
     /**
      * fetch와 count를 직접 수행
      * spring-data의 Page 로 생성하여 동일 구조로 테스트
-     * */
+     */
     @Test
     void paging3() {
         List<Member> content = query.selectFrom(member)
@@ -258,7 +262,7 @@ public class QueryDslBasicTest {
     @Test
     public void group() {
         // arrange
-        
+
         // action
         List<Tuple> result = query.select(team.name, member.age.avg())
                 .from(member)
@@ -271,10 +275,10 @@ public class QueryDslBasicTest {
         Tuple teamB = result.get(1);
 
         assertThat(teamA.get(team.name)).isEqualTo("teamA");
-        assertThat(teamA.get(member.age.avg())).isEqualTo((10+20)/2);
+        assertThat(teamA.get(member.age.avg())).isEqualTo((10 + 20) / 2);
 
         assertThat(teamB.get(team.name)).isEqualTo("teamB");
-        assertThat(teamB.get(member.age.avg())).isEqualTo((30+40)/2);
+        assertThat(teamB.get(member.age.avg())).isEqualTo((30 + 40) / 2);
     }
 
     /**
@@ -489,7 +493,7 @@ public class QueryDslBasicTest {
 
         List<Tuple> fetch = query
                 .select(member.username,
-                    select(memberSub.age.avg()).from(memberSub)
+                        select(memberSub.age.avg()).from(memberSub)
                 )
                 .from(member)
                 .fetch();
@@ -639,9 +643,9 @@ public class QueryDslBasicTest {
         List<UserDto> result = query.select(Projections.fields(UserDto.class,
                         member.username.as("name"),
                         ExpressionUtils.as(JPAExpressions
-                                .select(memberSub.age.max())
-                                .from(memberSub)
-                        , "age")))
+                                        .select(memberSub.age.max())
+                                        .from(memberSub)
+                                , "age")))
                 .from(member)
                 .fetch();
 
@@ -671,14 +675,14 @@ public class QueryDslBasicTest {
      * @QueryProjection 을 사용
      * Projections 은 매핑을 잘못해줘도 런타임에러가나지만
      * 이 방식은 컴파일 타임에 매핑에러를 파악할 수 있음
-     *
+     * <p>
      * 단점
      * - DTO도 Q File을 생성해야함
      * - 여러 레이어에 걸쳐 사용되는 DTO 가 queryDSL 라는 레포지토리 영역 기술에 종속성이 생김
-     *
+     * <p>
      * 결론
      * - 애플리케이션 구조관점에서 DTO가 queryDSL 에 대한 종속을 가져도 될지 팀 표준을 결정하고
-     *   그에 따라 @QueryProjection 사용여부를 결정하자
+     * 그에 따라 @QueryProjection 사용여부를 결정하자
      */
     @Test
     public void findDtoByQueryProjection() {
@@ -705,10 +709,10 @@ public class QueryDslBasicTest {
 
     private List<Member> searchMember1(String usernameCond, Integer ageCond) {
         BooleanBuilder builder = new BooleanBuilder();
-        if(usernameCond != null) {
+        if (usernameCond != null) {
             builder.and(member.username.eq(usernameCond));
         }
-        if(ageCond != null) {
+        if (ageCond != null) {
             builder.and(member.age.eq(ageCond));
         }
 
@@ -717,4 +721,38 @@ public class QueryDslBasicTest {
                 .fetch();
     }
 
+
+    @Test
+    void dynamicQueryWhereParam() {
+        String usernameParam = "member1";
+        Integer ageParam = 10;
+
+        List<Member> result = searchMember2(usernameParam, ageParam);
+        assertThat(result.size()).isEqualTo(1);
+    }
+
+    private List<Member> searchMember2(String usernameCond, Integer ageCond) {
+        return query.selectFrom(member)
+                // where에 여러개를 넣으면 and 로 묶인다
+                // null이면 무시된다. (동적 쿼리를 만들 때 유용하다)
+//                .where(usernameEq(usernameCond), ageEq(ageCond))
+                .where(allEq(usernameCond, ageCond))
+                .fetch();
+    }
+
+    private BooleanExpression usernameEq(String usernameCond) {
+        return usernameCond != null ? member.username.eq(usernameCond) : null;
+    }
+
+    private BooleanExpression ageEq(Integer ageCond) {
+        return ageCond != null ? member.age.eq(ageCond) : null;
+    }
+
+    /**
+    * 이처럼 조건을 조합할 수도 있다.
+    * 다만 여기서는 생략했지만 NPE 처리를 잘 해줘야함
+     */
+    private BooleanExpression allEq(String usernameCond, Integer ageCond) {
+        return usernameEq(usernameCond).and(ageEq(ageCond));
+    }
 }
