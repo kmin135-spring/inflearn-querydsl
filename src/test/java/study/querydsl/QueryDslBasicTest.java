@@ -755,4 +755,51 @@ public class QueryDslBasicTest {
     private BooleanExpression allEq(String usernameCond, Integer ageCond) {
         return usernameEq(usernameCond).and(ageEq(ageCond));
     }
+
+    /*
+    벌크 연산
+     */
+
+    @Test
+    void bulkUpdate() {
+        // 벌크연산은 영속성 컨텍스트 무시하고 바로 DB에 요청한다.
+        long affected = query.update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        assertThat(affected).isEqualTo(2);
+
+        // 영속성 컨텍스트값을 우선하므로 벌크연산결과가 반영되어있지 않음
+        List<Member> fetch = query.selectFrom(member).fetch();
+        fetch.forEach(System.out::println);
+
+        em.flush();
+        em.clear();
+
+        // 명시적으로 영속성 컨텍스트 초기화한 뒤에는 정상적으로 얻어옴
+        System.out.println("## 영속성 컨텍스트 초기화 ##");
+        fetch = query.selectFrom(member).fetch();
+        fetch.forEach(System.out::println);
+    }
+
+    @Test
+    void bulkAdd() {
+        // update member set age=age+1;
+        query.update(member)
+                .set(member.age, member.age.add(1))
+                .execute();
+        // update member set age=age*2;
+        query.update(member)
+                .set(member.age, member.age.multiply(2))
+                .execute();
+    }
+
+    @Test
+    void bulkDelete() {
+        // delete from member where age>18;
+        query.delete(member)
+                .where(member.age.gt(18))
+                .execute();
+    }
 }
