@@ -1,6 +1,8 @@
 package study.querydsl.repository;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -17,6 +19,7 @@ import javax.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
 
+import static org.springframework.util.StringUtils.hasText;
 import static study.querydsl.entity.QMember.member;
 import static study.querydsl.entity.QTeam.team;
 
@@ -76,10 +79,10 @@ public class MemberJpaRepository {
         paging 과 함께 사용하던가에 대한 고민이 필요하다
          */
         BooleanBuilder builder = new BooleanBuilder();
-        if (StringUtils.hasText(cond.getUsername())) {
+        if (hasText(cond.getUsername())) {
             builder.and(member.username.eq(cond.getUsername()));
         }
-        if (StringUtils.hasText(cond.getTeamName())) {
+        if (hasText(cond.getTeamName())) {
             builder.and(team.name.eq(cond.getTeamName()));
         }
         if(cond.getAgeGoe() != null) {
@@ -102,5 +105,49 @@ public class MemberJpaRepository {
                 .leftJoin(member.team, team)
                 .where(builder)
                 .fetch();
+    }
+
+    public List<MemberTeamDto> search(MemberSearchCondition search) {
+        return queryFactory
+                .select(new QMemberTeamDto(
+                        member.id.as("memberId"),
+                        member.username,
+                        member.age,
+                        team.id.as("teamId"),
+                        team.name.as("teamName"))
+                )
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(search.getUsername()),
+                        teamNameEq(search.getTeamName()),
+//                        ageGoe(search.getAgeGoe()),
+//                        ageLoe(search.getAgeLoe())
+                        ageBetween(search.getAgeLoe(), search.getAgeGoe())
+                )
+                .fetch();
+    }
+
+    private BooleanExpression ageBetween(Integer ageLoe, Integer ageGoe) {
+        return ageLoe != null && ageGoe != null ?
+                ageLoe(ageLoe).and(ageGoe(ageGoe)) :
+                null;
+    }
+
+    private BooleanExpression ageLoe(Integer ageLoe) {
+        return ageLoe != null ? member.age.loe(ageLoe) : null;
+
+    }
+
+    private BooleanExpression ageGoe(Integer ageGoe) {
+        return ageGoe != null ? member.age.goe(ageGoe) : null;
+    }
+
+    private BooleanExpression teamNameEq(String teamName) {
+        return hasText(teamName) ? team.name.eq(teamName) : null;
+    }
+
+    private BooleanExpression usernameEq(String username) {
+        return hasText(username) ? member.username.eq(username) : null;
     }
 }
