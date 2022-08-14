@@ -66,3 +66,9 @@
 * 클라이언트가 QueryDsl에 의존해야함
 * 컨트롤러에 querydsl 종속성이 생김
 * QuerydslPredicateExecutor, QueryDsl Web 지원
+
+## 직접 만들어보는 support 클래스
+
+* Querydsl4RepositorySupport
+* 5.x에서 fetchResults, fetchCount 가 deprecated 되었으므로 고쳐쓰거나 제한적으로 써야할듯.
+* 개인적으로는 몇 줄 더 줄이기보다는 QueryDsl 기본 기술만으로 사용하는 MemberRepositoryImpl 쪽이 안정적이라고 생각함
