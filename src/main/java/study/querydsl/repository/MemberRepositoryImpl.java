@@ -2,10 +2,12 @@ package study.querydsl.repository;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
@@ -84,14 +86,14 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
      * */
     @Override
     public Page<MemberTeamDto> searchPageComplex(MemberSearchCondition cond, Pageable pageable) {
-        Long total = queryFactory.select(member.count())
+        JPAQuery<Long> countQuery = queryFactory.select(member.count())
                 .from(member)
                 .leftJoin(member.team, team)
                 .where(
                         usernameEq(cond.getUsername()),
                         teamNameEq(cond.getTeamName()),
                         ageBetween(cond.getAgeLoe(), cond.getAgeGoe())
-                ).fetchOne();
+                );
 
         List<MemberTeamDto> content = queryFactory
                 .select(new QMemberTeamDto(
@@ -113,7 +115,15 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
                 .fetch();
 
 
-        return new PageImpl<>(content, pageable, total);
+//        return new PageImpl<>(content, pageable, total);
+
+        /*
+        이 방식을 이용하면 count 쿼리가 불필요한 경우 count 쿼리를 수행하지 않고 쿼리를 수행해준다.
+        1. 첫페이지 조회했는데 컨텐츠 크기가 요청크기보다 더 작으면 컨텐츠 크기 == total 이고
+        2. 조회했더니 마지막 페이지라면 offset 에 컨텐츠 크기를 더하면 == total 인점을 활용한 튜닝.
+        세부 구현은 코드를 직접 확인해보자
+         */
+        return PageableExecutionUtils.getPage(content, pageable, () -> countQuery.fetchOne());
     }
 
     private BooleanExpression ageBetween(Integer ageLoe, Integer ageGoe) {

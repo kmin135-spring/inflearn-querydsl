@@ -117,4 +117,30 @@ class MemberRepositoryTest {
                 .extracting("username")
                 .containsExactly("member1", "member2", "member3");
     }
+
+    @Test
+    public void searchPageComplexCountTuning() {
+        Team teamA = Team.of("teamA");
+        Team teamB = Team.of("teamB");
+        em.persist(teamA);
+        em.persist(teamB);
+
+        Member member1 = Member.of("member1", 10, teamA);
+        Member member2 = Member.of("member2", 20, teamA);
+        Member member3 = Member.of("member3", 30, teamB);
+        Member member4 = Member.of("member4", 40, teamB);
+        em.persist(member1);
+        em.persist(member2);
+        em.persist(member3);
+        em.persist(member4);
+
+        MemberSearchCondition cond = new MemberSearchCondition();
+        PageRequest pageRequest = PageRequest.of(0, 5);
+        Page<MemberTeamDto> results = memberRepo.searchPageComplex(cond, pageRequest);
+
+        assertThat(results.getTotalElements()).isEqualTo(4);
+        assertThat(results.getContent())
+                .extracting("username")
+                .containsExactly("member1", "member2", "member3", "member4");
+    }
 }
