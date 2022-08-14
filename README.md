@@ -58,3 +58,11 @@
 * 하지만 아예 별개로 명시적으로 별개의 Repository 를 정의해서 쓰는 것도 설계관점에서 고민
   * 특정 화면이나 API 에 종속적인 repository 라거나
   * 기본 리포지토리가 너무 비대해져서 쪼개고 싶다거나
+
+## spring-data-jpa 가 제공하는 querydsl 기능
+
+* 간단한 구조에서는 사용 가능하나 실무에서 활용하기에는 어려움
+* 조인이 안 됨 (묵시적 조인은 가능하나 left join 불가능)
+* 클라이언트가 QueryDsl에 의존해야함
+* 컨트롤러에 querydsl 종속성이 생김
+* QuerydslPredicateExecutor, QueryDsl Web 지원
